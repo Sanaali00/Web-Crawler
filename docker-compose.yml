@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  fastapi:
+    build: .
+    container_name: fastapi_app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - celery
+    environment:
+      - REDIS_HOST=redis
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+
+  redis:
+    image: "redis:alpine"
+    container_name: redis_db
+    ports:
+      - "6379:6379"
+
+  celery:
+    build: .
+    container_name: celery_worker
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+      - PYTHONPATH=/app
+
+    command: ["celery", "-A", "backend.workers.celery_app", "worker", "--loglevel=info"]
